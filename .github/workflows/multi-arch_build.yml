@@ -1,0 +1,67 @@
+name: Multi-arch GCC Build for Doxygen
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build on ${{ matrix.distro }} ${{ matrix.arch }} ${{ matrix.build_type }}
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        include:
+          - arch: s390x
+            distro: ubuntu20.04
+            build_type: "Release"
+          - arch: s390x
+            distro: ubuntu20.04
+            build_type: "Debug"
+
+    steps:
+    - name: Setup cache
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.ccache
+        key: build_ubuntu-20.04_${{ matrix.build_type }}
+
+    - uses: actions/checkout@v1
+
+    - uses: uraimo/run-on-arch-action@v2.5.0
+      name: Configure and Build
+      id: build
+      with:
+        arch: ${{ matrix.arch }}
+        distro: ${{ matrix.distro }}
+        githubToken: ${{ github.token }}
+        setup: |
+          mkdir -p ~/.ccache
+        dockerRunArgs: |
+          --volume "${HOME}/.ccache:/root/.ccache"
+        env: |
+          CC: gcc
+          CXX: g++
+          CTEST_OUTPUT_ON_FAILURE: ON
+        shell: /bin/bash
+        install: |
+          apt-get update -q -y
+          apt-get install -q -y build-essential ccache cmake flex bison qt5-default zlib1g-dev libsqlite3-dev texlive texlive-latex-recommended texlive-extra-utils texlive-latex-extra texlive-font-utils libxapian-dev ghostscript libxml2-utils graphviz
+          /usr/sbin/update-ccache-symlinks
+          echo 'export PATH="/usr/lib/ccache:$PATH"' | tee -a ~/.bash
+        run: |
+          set -x
+          mkdir build
+          cd build
+          cmake \
+            -G "Unix Makefiles" \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -Dbuild_doc=YES \
+            -Dbuild_wizard=YES \
+            -Dbuild_search=YES \
+            -Dbuild_app=YES \
+            -Dbuild_parse=YES \
+            -Dbuild_xmlparser=YES \
+            -Duse_sqlite3=ON \
+            ..
+          cmake --build $(pwd)
+          cmake --build $(pwd) --target tests -- TEST_FLAGS="--xml --xmlxsd --xhtml --docbook --rtf"
+          cmake --build $(pwd) --target docs
