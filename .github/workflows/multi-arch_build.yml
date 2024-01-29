@@ -12,9 +12,6 @@ jobs:
           - arch: s390x
             distro: ubuntu20.04
             build_type: "Release"
-          - arch: s390x
-            distro: ubuntu20.04
-            build_type: "Debug"
 
     steps:
     - name: Setup cache
@@ -30,8 +27,8 @@ jobs:
       name: Configure and Build
       id: build
       with:
-        arch: ${{ matrix.arch }}
-        distro: ${{ matrix.distro }}
+        arch: s390x
+        distro: ubuntu20.04
         githubToken: ${{ github.token }}
         setup: |
           mkdir -p ~/.ccache
