@@ -62,3 +62,6 @@ jobs:
           cmake --build $(pwd)
           cmake --build $(pwd) --target tests -- TEST_FLAGS="--xml --xmlxsd --xhtml --docbook --rtf"
           cmake --build $(pwd) --target docs
+          echo -------------------------------------------------------------------------
+          echo -------------------------------------------------------------------------
+          uname -m
